@@ -219,6 +219,9 @@ http {
     ## Include blacklist for bad bot and referer blocking.
     include blacklist.conf;
 
+    ## Include the map directive that sets the $no_slash_uri variable for drupal 6.
+    include apps/drupal/map_drupal6.conf;
+
     ## Include the caching setup. Needed for using Drupal with an external cache.
     include apps/drupal/map_cache.conf;
 

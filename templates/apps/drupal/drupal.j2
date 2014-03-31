@@ -33,7 +33,7 @@ location / {
 
         {%- if nginx_drupal_php_handling == 'proxy' %}
         ## Proxy configuration
-        proxy_pass http://phpapache/index.php?q=$uri;
+        proxy_pass http://phpapache/index.php?q=$no_slash_uri;
         proxy_set_header Connection '';
         {%- endif -%}
 
@@ -59,7 +59,7 @@ location / {
 
         {%- if nginx_drupal_php_handling == 'proxy' %}
         ## Proxy configuration
-        proxy_pass http://phpapache/index.php?q=$uri;
+        proxy_pass http://phpapache/index.php?q=$no_slash_uri;
         proxy_set_header Connection '';
         {% endif %}
 
@@ -80,7 +80,7 @@ location / {
 
         access_log off;
         expires 30d;
-        try_files $uri @drupal;
+        try_files $uri /index.php?q=$no_slash_uri&$args;
     }
 
     ## Drupal 7 generated image handling, i.e., imagecache in core. See:
@@ -93,7 +93,7 @@ location / {
 
         access_log off;
         expires 30d;
-        try_files $uri @drupal;
+        try_files $uri /index.php?q=$no_slash_uri&$args;
     }
 
     ## Advanced Aggregation module CSS
@@ -106,7 +106,7 @@ location / {
 
         location ~* /sites/default/files/advagg_css/css[_[:alnum:]]+\.css$ {
             access_log off;
-            try_files $uri @drupal;
+            try_files $uri /index.php?q=$no_slash_uri&$args;
         }
     }
 
@@ -120,7 +120,7 @@ location / {
 
         location ~* /sites/default/files/advagg_js/js[_[:alnum:]]+\.js$ {
             access_log off;
-            try_files $uri @drupal;
+            try_files $uri /index.php?q=$no_slash_uri&$args;
         }
     }
 
@@ -218,7 +218,7 @@ location / {
 
             {%- if nginx_drupal_php_handling == 'proxy' %}
             ## Proxy configuration
-            proxy_pass http://phpapache/index.php?q=$uri;
+            proxy_pass http://phpapache/index.php?q=$no_slash_uri;
             proxy_set_header Connection '';
             {%- endif -%}
         }
@@ -231,8 +231,8 @@ location / {
         return 404;
     }
 
-    ## First we try the URI and relay to the /index.php?q=$uri&$args if not found.
-    try_files $uri @drupal;
+    ## First we try the URI and relay to the /index.php?q=$no_slash_uri&$args if not found.
+    try_files $uri /index.php?q=$no_slash_uri&$args;
 }
 
 ########### Security measures ##########
@@ -246,7 +246,7 @@ include apps/drupal/admin_basic_auth.conf;
 
 ## Restrict access to the strictly necessary PHP files. Reducing the
 ## scope for exploits. Handling of PHP code and the Drupal event loop.
-location @drupal {
+location = /index.php {
     {%- if nginx_drupal_php_handling == 'php-fpm' or nginx_drupal_php_handling == 'php-cgi' %}
     ## Include the FastCGI config.
     include apps/drupal/fastcgi_drupal.conf;
@@ -264,7 +264,7 @@ location @drupal {
 
     {%- if nginx_drupal_php_handling == 'proxy' %}
     ## Proxy configutation
-    proxy_pass http://phpapache/index.php?q=$uri;
+    proxy_pass http://phpapache/index.php?q=$no_slash_uri;
     proxy_set_header Connection '';
     {%- if nginx_drupal_microcache %}
     ## Proxy microcache.
@@ -282,40 +282,6 @@ location @drupal {
     ## through the NginxUploadProgress modules.
     track_uploads uploads 60s;
     {% endif %}
-}
-
-location @drupal-no-args {
-    {%- if nginx_drupal_php_handling == 'php-fpm' or nginx_drupal_php_handling == 'php-cgi' %}
-    ## Include the FastCGI config.
-    include apps/drupal/fastcgi_no_args_drupal.conf;
-    fastcgi_pass phpcgi;
-
-    {% if nginx_drupal_microcache %}
-    {% if not nginx_drupal_microcache_auth %}
-    ## FastCGI microcache.
-    include apps/drupal/microcache_fcgi.conf;
-    {% else %}
-    ## FCGI microcache for authenticated users also.
-    include apps/drupal/microcache_fcgi_auth.conf;
-    {%- endif -%}
-    {%- endif -%}
-    {%- endif -%}
-
-    {%- if nginx_drupal_php_handling == 'proxy' %}
-    ## Proxy configutation
-    proxy_pass http://phpapache/index.php?q=$uri;
-    proxy_set_header Connection '';
-
-    {%- if nginx_drupal_microcache %}
-    {%- if not nginx_drupal_microcache_auth %}
-    ## Proxy microcache.
-    include apps/drupal/microcache_proxy.conf;
-    {% else %}
-    ## Proxy microcache for authenticated users also.
-    include apps/drupal/microcache_proxy_auth.conf;
-    {%- endif -%}
-    {%- endif -%}
-    {%- endif -%}
 }
 
 ## Disallow access to .bzr, .git, .hg, .svn, .cvs directories: return
@@ -355,17 +321,17 @@ location = /robots.txt {
     access_log off;
     ## Add support for the robotstxt module
     ## http://drupal.org/project/robotstxt.
-    try_files $uri @drupal-no-args;
+    try_files $uri /index.php?q=$uri;
 }
 
 ## RSS feed support.
 location = /rss.xml {
-    try_files $uri @drupal-no-args;
+    try_files $uri /index.php?q=$uri;
 }
 
 ## XML Sitemap support.
 location = /sitemap.xml {
-    try_files $uri @drupal-no-args;
+    try_files $uri /index.php?q=$uri;
 }
 
 ## Support for favicon. Return an 1x1 transparent GIF if it doesn't
